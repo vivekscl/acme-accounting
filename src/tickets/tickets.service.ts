@@ -6,6 +6,7 @@ import {
 } from '../../db/models/Ticket';
 import { User, UserRole } from '../../db/models/User';
 import { TicketRepository } from './tickets.repository';
+import { TicketDto } from './ticket.dto';
 import {
   DuplicateTicketException,
   MultipleAssigneesException,
@@ -13,15 +14,6 @@ import {
   NoDirectorException,
   NoAssigneeException,
 } from '../exceptions/ticket.exceptions';
-
-interface TicketDto {
-  id: number;
-  type: TicketType;
-  companyId: number;
-  assigneeId: number;
-  status: TicketStatus;
-  category: TicketCategory;
-}
 
 @Injectable()
 export class TicketsService {

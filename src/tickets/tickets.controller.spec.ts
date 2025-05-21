@@ -90,9 +90,7 @@ describe('TicketsController', () => {
             companyId: company.id,
             type: TicketType.managementReport,
           }),
-        ).rejects.toEqual(
-          new NoAssigneeException(UserRole.accountant),
-        );
+        ).rejects.toEqual(new NoAssigneeException(UserRole.accountant));
       });
       it('prefers newest accountant when multiple are present', async () => {
         const company = await Company.create({ name: 'test' });
@@ -221,9 +219,7 @@ describe('TicketsController', () => {
             companyId: company.id,
             type: TicketType.registrationAddressChange,
           }),
-        ).rejects.toEqual(
-          new MultipleAssigneesException(UserRole.Director),
-        );
+        ).rejects.toEqual(new MultipleAssigneesException(UserRole.Director));
       });
 
       it('if there is no secretary, switch to Director and then if no Director, throw', async () => {
@@ -234,9 +230,7 @@ describe('TicketsController', () => {
             companyId: company.id,
             type: TicketType.registrationAddressChange,
           }),
-        ).rejects.toEqual(
-          new NoAssigneeException(UserRole.Director),
-        );
+        ).rejects.toEqual(new NoAssigneeException(UserRole.Director));
       });
 
       it('if the company already has a ticket with registrationAddressChange type, throw', async () => {
@@ -261,9 +255,7 @@ describe('TicketsController', () => {
             companyId: company.id,
             type: TicketType.registrationAddressChange,
           }),
-        ).rejects.toEqual(
-          new DuplicateTicketException(ticket.id),
-        );
+        ).rejects.toEqual(new DuplicateTicketException(ticket.id));
       });
       it('create ticket for non-existent company, throw', async () => {
         await expect(
@@ -301,9 +293,7 @@ describe('TicketsController', () => {
             companyId: company.id,
             type: TicketType.strikeOff,
           }),
-        ).rejects.toEqual(
-          new NoDirectorException(),
-        );
+        ).rejects.toEqual(new NoDirectorException());
       });
 
       it('if multiple Directors found, throw', async () => {
@@ -324,9 +314,7 @@ describe('TicketsController', () => {
             companyId: company.id,
             type: TicketType.strikeOff,
           }),
-        ).rejects.toEqual(
-          new MultipleDirectorsException(),
-        );
+        ).rejects.toEqual(new MultipleDirectorsException());
       });
 
       it('closes all other active tickets when creating strikeOff ticket', async () => {
