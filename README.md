@@ -121,6 +121,33 @@ time to get the results. Maybe this is a good time to refactor the code.
    to check the status of the processing.
 3. Metrics should be recorded for discussion.
 
+**Metrics**
+Report generation time for original approach
+{
+
+    "accounts.csv": "finished in 2.28",
+
+    "yearly.csv": "finished in 1.42",
+
+    "fs.csv": "finished in 2.10"
+
+}
+
+Reports generation time for new async file reading approach. Note that the time is now the total
+time taken for generating all reports due to:
+1. Promise.all effect: All functions start concurrently but the event loop processes them together
+2. File I/O bottleneck: All three functions are competing for the same file system resources
+3. CPU scheduling: Node.js is single-threaded, so async operations queue up and process in batches
+{
+
+    "accounts.csv": "finished in 5.22",
+
+    "yearly.csv": "finished in 5.22",
+
+    "fs.csv": "finished in 5.22"
+
+}
+
 ## Stretch Tasks
 
 There are common principles in the repository that are intentionally 

@@ -6,10 +6,17 @@ import { HealthcheckController } from './healthcheck/healthcheck.controller';
 import { ReportsService } from './reports/reports.service';
 import { TicketsService } from './tickets/tickets.service';
 import { TicketRepository } from './tickets/tickets.repository';
+import { ReportsListener } from './reports/reports.listener';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 
 @Module({
-  imports: [DbModule],
+  imports: [DbModule, EventEmitterModule.forRoot()],
   controllers: [TicketsController, ReportsController, HealthcheckController],
-  providers: [ReportsService, TicketsService, TicketRepository],
+  providers: [
+    ReportsService,
+    ReportsListener,
+    TicketsService,
+    TicketRepository,
+  ],
 })
 export class AppModule {}
