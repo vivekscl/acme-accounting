@@ -23,9 +23,8 @@ export class ReportsService {
   }
 
   async accounts() {
-    this.eventEmitter.emit('reports.accounts.update', 'starting');
+    setImmediate(() => this.eventEmitter.emit('reports.accounts.update', 'starting'));
     const start = performance.now();
-    console.log('Accounts started at:', start);
     const tmpDir = 'tmp';
     const outputFile = 'out/accounts.csv';
     const accountBalances: Record<string, number> = {};
@@ -53,17 +52,11 @@ export class ReportsService {
     await fs.writeFile(outputFile, output.join('\n'));
 
     const duration = `finished in ${((performance.now() - start) / 1000).toFixed(2)}`;
-    console.log(
-      'Accounts finished at:',
-      performance.now(),
-      'Duration:',
-      duration,
-    );
-    this.eventEmitter.emit('reports.accounts.update', duration);
+    setImmediate(() => this.eventEmitter.emit('reports.accounts.update', duration));
   }
 
   async yearly() {
-    this.eventEmitter.emit('reports.yearly.update', 'starting');
+    setImmediate(() => this.eventEmitter.emit('reports.yearly.update', 'starting'));
     const start = performance.now();
     const tmpDir = 'tmp';
     const outputFile = 'out/yearly.csv';
@@ -97,11 +90,11 @@ export class ReportsService {
     await fs.writeFile(outputFile, output.join('\n'));
 
     const duration = `finished in ${((performance.now() - start) / 1000).toFixed(2)}`;
-    this.eventEmitter.emit('reports.yearly.update', duration);
+    setImmediate(() => this.eventEmitter.emit('reports.yearly.update', duration));
   }
 
   async fs() {
-    this.eventEmitter.emit('reports.fs.update', 'starting');
+    setImmediate(() => this.eventEmitter.emit('reports.fs.update', 'starting'));
     const start = performance.now();
     const tmpDir = 'tmp';
     const outputFile = 'out/fs.csv';
@@ -222,6 +215,6 @@ export class ReportsService {
     await fs.writeFile(outputFile, output.join('\n'));
 
     const duration = `finished in ${((performance.now() - start) / 1000).toFixed(2)}`;
-    this.eventEmitter.emit('reports.fs.update', duration);
+    setImmediate(() => this.eventEmitter.emit('reports.fs.update', duration));
   }
 }
