@@ -14,13 +14,14 @@
     "migrate": "sequelize db:migrate",
     "migrate:create": "sequelize db:create",
     "postinstall": "node generate.js",
-    "db:migrate:test": "NODE_ENV=test sequelize db:migrate",
-    "db:create:test": "NODE_ENV=test sequelize db:create",
+    "db:migrate:test": "cross-env NODE_ENV=test sequelize db:migrate",
+    "db:create:test": "cross-env NODE_ENV=test sequelize db:create",
     "db:reset": "sequelize db:migrate:undo:all"
   },
   "dependencies": {
     "@nestjs/common": "11.0.12",
     "@nestjs/core": "11.0.13",
+    "@nestjs/event-emitter": "^3.0.1",
     "@nestjs/platform-express": "11.0.13",
     "@nestjs/sequelize": "11.0.0",
     "pg": "8.14.1",
@@ -41,6 +42,7 @@
     "@types/node": "22.14.0",
     "@types/sequelize": "4.28.20",
     "@types/supertest": "6.0.3",
+    "cross-env": "^7.0.3",
     "eslint": "9.24.0",
     "eslint-config-prettier": "10.1.1",
     "eslint-plugin-prettier": "5.2.6",
@@ -76,5 +78,10 @@
     "setupFilesAfterEnv": [
       "./tests/setupJest.ts"
     ]
-  }
+  },
+  "version": "1.0.0",
+  "description": "Welcome to ACME acounting, this codebase serves as a way for you to\r know how we at OSOME work and how you work through challenges while\r adopting an existing codebase.",
+  "main": "generate.js",
+  "author": "",
+  "license": "ISC"
 }

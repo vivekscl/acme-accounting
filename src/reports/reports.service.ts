@@ -1,7 +1,8 @@
 import { Injectable } from '@nestjs/common';
-import fs from 'fs';
+import { promises as fs } from 'fs';
 import path from 'path';
 import { performance } from 'perf_hooks';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 
 @Injectable()
 export class ReportsService {
@@ -11,22 +12,28 @@ export class ReportsService {
     fs: 'idle',
   };
 
+  constructor(private eventEmitter: EventEmitter2) {}
+
   state(scope: string) {
     return this.states[scope];
   }
 
-  accounts() {
-    this.states.accounts = 'starting';
+  updateState(scope: string, status: string) {
+    this.states[scope] = status;
+  }
+
+  async accounts() {
+    setImmediate(() => this.eventEmitter.emit('reports.accounts.update', 'starting'));
     const start = performance.now();
     const tmpDir = 'tmp';
     const outputFile = 'out/accounts.csv';
     const accountBalances: Record<string, number> = {};
-    fs.readdirSync(tmpDir).forEach((file) => {
+
+    const files = await fs.readdir(tmpDir);
+    for (const file of files) {
       if (file.endsWith('.csv')) {
-        const lines = fs
-          .readFileSync(path.join(tmpDir, file), 'utf-8')
-          .trim()
-          .split('\n');
+        const content = await fs.readFile(path.join(tmpDir, file), 'utf-8');
+        const lines = content.trim().split('\n');
         for (const line of lines) {
           const [, account, , debit, credit] = line.split(',');
           if (!accountBalances[account]) {
@@ -36,27 +43,30 @@ export class ReportsService {
             parseFloat(String(debit || 0)) - parseFloat(String(credit || 0));
         }
       }
-    });
+    }
+
     const output = ['Account,Balance'];
     for (const [account, balance] of Object.entries(accountBalances)) {
       output.push(`${account},${balance.toFixed(2)}`);
     }
-    fs.writeFileSync(outputFile, output.join('\n'));
-    this.states.accounts = `finished in ${((performance.now() - start) / 1000).toFixed(2)}`;
+    await fs.writeFile(outputFile, output.join('\n'));
+
+    const duration = `finished in ${((performance.now() - start) / 1000).toFixed(2)}`;
+    setImmediate(() => this.eventEmitter.emit('reports.accounts.update', duration));
   }
 
-  yearly() {
-    this.states.yearly = 'starting';
+  async yearly() {
+    setImmediate(() => this.eventEmitter.emit('reports.yearly.update', 'starting'));
     const start = performance.now();
     const tmpDir = 'tmp';
     const outputFile = 'out/yearly.csv';
     const cashByYear: Record<string, number> = {};
-    fs.readdirSync(tmpDir).forEach((file) => {
+
+    const files = await fs.readdir(tmpDir);
+    for (const file of files) {
       if (file.endsWith('.csv') && file !== 'yearly.csv') {
-        const lines = fs
-          .readFileSync(path.join(tmpDir, file), 'utf-8')
-          .trim()
-          .split('\n');
+        const content = await fs.readFile(path.join(tmpDir, file), 'utf-8');
+        const lines = content.trim().split('\n');
         for (const line of lines) {
           const [date, account, , debit, credit] = line.split(',');
           if (account === 'Cash') {
@@ -69,19 +79,22 @@ export class ReportsService {
           }
         }
       }
-    });
+    }
+
     const output = ['Financial Year,Cash Balance'];
     Object.keys(cashByYear)
       .sort()
       .forEach((year) => {
         output.push(`${year},${cashByYear[year].toFixed(2)}`);
       });
-    fs.writeFileSync(outputFile, output.join('\n'));
-    this.states.yearly = `finished in ${((performance.now() - start) / 1000).toFixed(2)}`;
+    await fs.writeFile(outputFile, output.join('\n'));
+
+    const duration = `finished in ${((performance.now() - start) / 1000).toFixed(2)}`;
+    setImmediate(() => this.eventEmitter.emit('reports.yearly.update', duration));
   }
 
-  fs() {
-    this.states.fs = 'starting';
+  async fs() {
+    setImmediate(() => this.eventEmitter.emit('reports.fs.update', 'starting'));
     const start = performance.now();
     const tmpDir = 'tmp';
     const outputFile = 'out/fs.csv';
@@ -116,6 +129,7 @@ export class ReportsService {
         Equity: ['Common Stock', 'Retained Earnings'],
       },
     };
+
     const balances: Record<string, number> = {};
     for (const section of Object.values(categories)) {
       for (const group of Object.values(section)) {
@@ -124,30 +138,27 @@ export class ReportsService {
         }
       }
     }
-    fs.readdirSync(tmpDir).forEach((file) => {
-      if (file.endsWith('.csv') && file !== 'fs.csv') {
-        const lines = fs
-          .readFileSync(path.join(tmpDir, file), 'utf-8')
-          .trim()
-          .split('\n');
 
+    const files = await fs.readdir(tmpDir);
+    for (const file of files) {
+      if (file.endsWith('.csv') && file !== 'fs.csv') {
+        const content = await fs.readFile(path.join(tmpDir, file), 'utf-8');
+        const lines = content.trim().split('\n');
         for (const line of lines) {
           const [, account, , debit, credit] = line.split(',');
-
           if (balances.hasOwnProperty(account)) {
             balances[account] +=
               parseFloat(String(debit || 0)) - parseFloat(String(credit || 0));
           }
         }
       }
-    });
+    }
 
     const output: string[] = [];
-    output.push('Basic Financial Statement');
-    output.push('');
-    output.push('Income Statement');
-    let totalRevenue = 0;
-    let totalExpenses = 0;
+    output.push('Basic Financial Statement', '', 'Income Statement');
+    let totalRevenue = 0,
+      totalExpenses = 0;
+
     for (const account of categories['Income Statement']['Revenues']) {
       const value = balances[account] || 0;
       output.push(`${account},${value.toFixed(2)}`);
@@ -158,29 +169,34 @@ export class ReportsService {
       output.push(`${account},${value.toFixed(2)}`);
       totalExpenses += value;
     }
-    output.push(`Net Income,${(totalRevenue - totalExpenses).toFixed(2)}`);
-    output.push('');
-    output.push('Balance Sheet');
-    let totalAssets = 0;
-    let totalLiabilities = 0;
-    let totalEquity = 0;
+    output.push(
+      `Net Income,${(totalRevenue - totalExpenses).toFixed(2)}`,
+      '',
+      'Balance Sheet',
+    );
+
+    let totalAssets = 0,
+      totalLiabilities = 0,
+      totalEquity = 0;
     output.push('Assets');
     for (const account of categories['Balance Sheet']['Assets']) {
       const value = balances[account] || 0;
       output.push(`${account},${value.toFixed(2)}`);
       totalAssets += value;
     }
-    output.push(`Total Assets,${totalAssets.toFixed(2)}`);
-    output.push('');
-    output.push('Liabilities');
+    output.push(`Total Assets,${totalAssets.toFixed(2)}`, '', 'Liabilities');
+
     for (const account of categories['Balance Sheet']['Liabilities']) {
       const value = balances[account] || 0;
       output.push(`${account},${value.toFixed(2)}`);
       totalLiabilities += value;
     }
-    output.push(`Total Liabilities,${totalLiabilities.toFixed(2)}`);
-    output.push('');
-    output.push('Equity');
+    output.push(
+      `Total Liabilities,${totalLiabilities.toFixed(2)}`,
+      '',
+      'Equity',
+    );
+
     for (const account of categories['Balance Sheet']['Equity']) {
       const value = balances[account] || 0;
       output.push(`${account},${value.toFixed(2)}`);
@@ -190,12 +206,15 @@ export class ReportsService {
       `Retained Earnings (Net Income),${(totalRevenue - totalExpenses).toFixed(2)}`,
     );
     totalEquity += totalRevenue - totalExpenses;
-    output.push(`Total Equity,${totalEquity.toFixed(2)}`);
-    output.push('');
     output.push(
+      `Total Equity,${totalEquity.toFixed(2)}`,
+      '',
       `Assets = Liabilities + Equity, ${totalAssets.toFixed(2)} = ${(totalLiabilities + totalEquity).toFixed(2)}`,
     );
-    fs.writeFileSync(outputFile, output.join('\n'));
-    this.states.fs = `finished in ${((performance.now() - start) / 1000).toFixed(2)}`;
+
+    await fs.writeFile(outputFile, output.join('\n'));
+
+    const duration = `finished in ${((performance.now() - start) / 1000).toFixed(2)}`;
+    setImmediate(() => this.eventEmitter.emit('reports.fs.update', duration));
   }
 }
